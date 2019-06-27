@@ -15,33 +15,49 @@
 
 #include "stars.h"
 #include <random>
+#include <stdexcept>
+
+#include <iostream>
 
 
 Stars::Stars(GLulong num) :
+	m_initialised(false),
 	m_num(num),
 	m_vbo(0),
-	m_vel(nullptr)
+	m_vel(nullptr),
+	m_ocl_context(nullptr),
+	m_ocl_cmd_queue(nullptr),
+	m_ocl_kernel(nullptr)
 {
 }
 
 
 Stars::~Stars()
 {
-	if (m_vbo)
+	if (m_initialised)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 		glDeleteBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		m_vbo = 0;
+
+		clReleaseKernel(m_ocl_kernel);
+		m_ocl_kernel = nullptr;
+		clReleaseContext(m_ocl_context);
+		m_ocl_context = nullptr;
+		clReleaseCommandQueue(m_ocl_cmd_queue);
+		m_ocl_cmd_queue = nullptr;
+
+		m_initialised = false;
 	}
 }
 
 
 void Stars::init()
 {
-	if (!m_vbo)
+	if (!m_initialised)
 	{
-		std::random_device gen; // use a hardware entropy source if available, otherwise use PRNG
+		std::random_device gen;
 		std::uniform_real_distribution<GLfloat> distrib(-1.0f, 1.0f);
 
 		glGenBuffers(1, &m_vbo);
@@ -68,22 +84,45 @@ void Stars::init()
 			m_vel[i].y = distrib(gen);
 			m_vel[i].z = distrib(gen);
 		}
+
+		std::cout << glGetString(GL_RENDERER) << std::endl;
+
+		/*cl_context_properties ocl_properties[] =
+		{
+			CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+			CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+			0
+		};*/
+
+		//cl_device_id ocl_device = nullptr;
+		//clGetGLContextInfoKHR(ocl_properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(cl_device_id), &ocl_device, nullptr);
+		//m_ocl_context = clCreateContext(nullptr, 1, &ocl_device, nullptr, nullptr, nullptr);
+
+		m_initialised = true;
+	}
+	else
+	{
+		throw std::exception("Already initialised.");
 	}
 }
 
 
 void Stars::calculate()
 {
-	if (m_vbo)
+	if (m_initialised)
 	{
 		// TODO !!
+	}
+	else
+	{
+		throw std::exception("Not initialised.");
 	}
 }
 
 
 void Stars::draw()
 {
-	if (m_vbo)
+	if (m_initialised)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 		glVertexPointer(3, GL_FLOAT, 0, nullptr);
@@ -92,5 +131,9 @@ void Stars::draw()
 		glDrawArrays(GL_POINTS, 0, m_num);
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+	else
+	{
+		throw std::exception("Not initialised.");
 	}
 }

@@ -119,29 +119,21 @@ void timer(int value)
 
 int main(int argc, char** argv)
 {
-	try
-	{
-		glutInit(&argc, argv);
-		glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-		glutInitWindowSize(500, 500);
-		glutCreateWindow(argv[0]);
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(500, 500);
+	glutCreateWindow(argv[0]);
 
-		glewInit();
+	glewInit();
 
-		init();
+	init();
 
-		glutDisplayFunc(display);
-		glutReshapeFunc(reshape);
-		glutKeyboardFunc(keyboard);
-		glutTimerFunc(100, timer, 0);
+	glutDisplayFunc(display);
+	glutReshapeFunc(reshape);
+	glutKeyboardFunc(keyboard);
+	glutTimerFunc(100, timer, 0);
 
-		glutMainLoop();
+	glutMainLoop();
 
-		return EXIT_SUCCESS;
-	}
-	catch (std::exception& exc)
-	{
-		std::cerr << exc.what() << std::endl;
-		return EXIT_FAILURE;
-	}
+	return EXIT_SUCCESS;
 }

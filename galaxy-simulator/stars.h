@@ -18,6 +18,7 @@
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <CL/opencl.h>
 #include <memory>
 
 class Stars
@@ -30,9 +31,13 @@ private:
 		float z;
 	};
 
+	bool m_initialised;
 	const GLsizei m_num;
 	GLuint m_vbo;
 	std::unique_ptr<Vector3D[]> m_vel;
+	cl_context m_ocl_context;
+	cl_command_queue m_ocl_cmd_queue;
+	cl_kernel m_ocl_kernel;
 
 public:
 	Stars(GLulong num);
