@@ -4,20 +4,18 @@
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU Affero General Public License as published
 	by the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Affero General Public License for more details.
-	You should have received a copy of the GNU Affero General Public License
-	along with this program. If not, see <https://www.gnu.org/licenses/>.
+	(at your option) any later version. This program is distributed in the
+	hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+	implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the GNU Affero General Public License for more details. You should
+	have received a copy of the GNU Affero General Public License along with
+	this program. If not, see <https://www.gnu.org/licenses/>.
 */
+
 
 #include "stars.h"
 #include <random>
 #include <stdexcept>
-
-#include <iostream>
 
 
 Stars::Stars(GLulong num) :
@@ -59,7 +57,8 @@ void Stars::release()
 
 		if (m_ocl_cmd_queue != nullptr)
 		{
-			clReleaseCommandQueue(m_ocl_cmd_queue);
+			// TODO !! Why causes memory access violation ??
+			//clReleaseCommandQueue(m_ocl_cmd_queue);
 			m_ocl_cmd_queue = nullptr;
 		}
 
@@ -83,9 +82,9 @@ void Stars::init()
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, m_num * sizeof(Vector3D), nullptr, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_num * sizeof(Vector3D), nullptr, GL_STATIC_DRAW);
 		
-		Vector3D* pos = reinterpret_cast<Vector3D*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
+		auto pos = reinterpret_cast<Vector3D*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
 
 		for (GLsizei i = 0; i < m_num; i++)
 		{
@@ -106,6 +105,11 @@ void Stars::init()
 			m_vel[i].z = distrib(gen);
 		}
 
+		m_old_pos = std::make_unique<Vector3D[]>(m_num);
+		m_old_vel = std::make_unique<Vector3D[]>(m_num);
+
+		//////////////////////////////////////////////////////
+
 		cl_uint ocl_num_platforms;
 		clGetPlatformIDs(0, nullptr, &ocl_num_platforms);
 		if (ocl_num_platforms == 0)
@@ -117,28 +121,39 @@ void Stars::init()
 		auto ocl_platforms = std::make_unique<cl_platform_id[]>(ocl_num_platforms);
 		clGetPlatformIDs(ocl_num_platforms, ocl_platforms.get(), nullptr);
 
-		std::cout << "GL_RENDERER: " << glGetString(GL_RENDERER) << std::endl;
-
 		for (cl_uint i = 0; i < ocl_num_platforms + 1; i++)
 		{
 			if (i == ocl_num_platforms)
 			{
 				release();
-				throw std::exception("Cannot create OpenCL context.");
+				throw std::exception("Cannot initialise OpenCL.");
 			}
 			else
 			{
 				cl_context_properties ocl_context_properties[] =
 				{
-					CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
-					CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-					CL_CONTEXT_PLATFORM, (cl_context_properties)(ocl_platforms[i]),
+					CL_GL_CONTEXT_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentContext()),
+					CL_WGL_HDC_KHR, reinterpret_cast<cl_context_properties>(wglGetCurrentDC()),
+					CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(ocl_platforms[i]),
 					0
 				};
 
 				cl_int ocl_err;
 				m_ocl_context = clCreateContextFromType(ocl_context_properties, CL_DEVICE_TYPE_GPU, nullptr, nullptr, &ocl_err);
-				if (ocl_err == CL_SUCCESS) break;
+				if (ocl_err != CL_SUCCESS) continue;
+
+				size_t ocl_devices_size;
+				clGetContextInfo(m_ocl_context, CL_CONTEXT_DEVICES, 0, nullptr, &ocl_devices_size);
+				cl_uint ocl_num_devices = ocl_devices_size / sizeof(cl_device_id);
+				if (ocl_num_devices != 1) continue;
+
+				cl_device_id ocl_device;
+				clGetContextInfo(m_ocl_context, CL_CONTEXT_DEVICES, sizeof(cl_device_id), &ocl_device, nullptr);
+
+				m_ocl_cmd_queue = clCreateCommandQueue(m_ocl_context, ocl_device, 0, &ocl_err);
+				if (ocl_err != CL_SUCCESS) continue;
+
+				break;
 			}
 		}
 
