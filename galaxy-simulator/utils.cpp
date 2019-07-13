@@ -18,7 +18,7 @@
 #include <cmath>
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #endif
 
 
@@ -48,12 +48,9 @@ float Utils::clamp(float value, const float min, const float max)
 	if (min > max) throw std::exception("MIN > MAX in clamp function.");
 	if (min == max) return min;
 
-	if (value > max)
-		return max;
-	else if (value < min)
-		return min;
-	else
-		return value;
+	if (value > max) return max;
+	else if (value < min) return min;
+	else return value;
 }
 
 

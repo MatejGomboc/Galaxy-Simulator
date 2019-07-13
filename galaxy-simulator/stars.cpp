@@ -32,24 +32,45 @@ Stars::Stars(GLulong num) :
 }
 
 
-Stars::~Stars()
+void Stars::release()
 {
 	if (m_initialised)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glDeleteBuffers(1, &m_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		m_vbo = 0;
+		if (m_vbo != 0)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+			glDeleteBuffers(1, &m_vbo);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			m_vbo = 0;
+		}
 
-		clReleaseKernel(m_ocl_kernel);
-		m_ocl_kernel = nullptr;
-		clReleaseContext(m_ocl_context);
-		m_ocl_context = nullptr;
-		clReleaseCommandQueue(m_ocl_cmd_queue);
-		m_ocl_cmd_queue = nullptr;
+		if (m_ocl_kernel != nullptr)
+		{
+			clReleaseKernel(m_ocl_kernel);
+			m_ocl_kernel = nullptr;
+		}
+
+		if (m_ocl_context != nullptr)
+		{
+			// TODO !! Why causes memory access violation ??
+			//clReleaseContext(m_ocl_context);
+			m_ocl_context = nullptr;
+		}
+
+		if (m_ocl_cmd_queue != nullptr)
+		{
+			clReleaseCommandQueue(m_ocl_cmd_queue);
+			m_ocl_cmd_queue = nullptr;
+		}
 
 		m_initialised = false;
 	}
+}
+
+
+Stars::~Stars()
+{
+	release();
 }
 
 
@@ -62,7 +83,7 @@ void Stars::init()
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, m_num * 3 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_num * sizeof(Vector3D), nullptr, GL_DYNAMIC_DRAW);
 		
 		Vector3D* pos = reinterpret_cast<Vector3D*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
 
@@ -85,18 +106,41 @@ void Stars::init()
 			m_vel[i].z = distrib(gen);
 		}
 
-		std::cout << glGetString(GL_RENDERER) << std::endl;
-
-		/*cl_context_properties ocl_properties[] =
+		cl_uint ocl_num_platforms;
+		clGetPlatformIDs(0, nullptr, &ocl_num_platforms);
+		if (ocl_num_platforms == 0)
 		{
-			CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
-			CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-			0
-		};*/
+			release();
+			throw std::exception("No OpenCL platforms found.");
+		}
 
-		//cl_device_id ocl_device = nullptr;
-		//clGetGLContextInfoKHR(ocl_properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(cl_device_id), &ocl_device, nullptr);
-		//m_ocl_context = clCreateContext(nullptr, 1, &ocl_device, nullptr, nullptr, nullptr);
+		auto ocl_platforms = std::make_unique<cl_platform_id[]>(ocl_num_platforms);
+		clGetPlatformIDs(ocl_num_platforms, ocl_platforms.get(), nullptr);
+
+		std::cout << "GL_RENDERER: " << glGetString(GL_RENDERER) << std::endl;
+
+		for (cl_uint i = 0; i < ocl_num_platforms + 1; i++)
+		{
+			if (i == ocl_num_platforms)
+			{
+				release();
+				throw std::exception("Cannot create OpenCL context.");
+			}
+			else
+			{
+				cl_context_properties ocl_context_properties[] =
+				{
+					CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+					CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+					CL_CONTEXT_PLATFORM, (cl_context_properties)(ocl_platforms[i]),
+					0
+				};
+
+				cl_int ocl_err;
+				m_ocl_context = clCreateContextFromType(ocl_context_properties, CL_DEVICE_TYPE_GPU, nullptr, nullptr, &ocl_err);
+				if (ocl_err == CL_SUCCESS) break;
+			}
+		}
 
 		m_initialised = true;
 	}

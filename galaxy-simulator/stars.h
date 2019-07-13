@@ -39,6 +39,8 @@ private:
 	cl_command_queue m_ocl_cmd_queue;
 	cl_kernel m_ocl_kernel;
 
+	void release();
+
 public:
 	Stars(GLulong num);
 	~Stars();
