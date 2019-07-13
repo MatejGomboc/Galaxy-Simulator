@@ -211,6 +211,9 @@ copy "$(SolutionDir)\glew\bin\x86\glew32.dll" "$(SolutionDir)$(Platform)\$(Confi
     <ClInclude Include="stars.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="stars.cl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -22,7 +22,9 @@ Stars::Stars(GLulong num) :
 	m_initialised(false),
 	m_num(num),
 	m_vbo(0),
-	m_vel(nullptr),
+	m_vel(std::make_unique<Vector3D[]>(m_num)),
+	m_old_pos(std::make_unique<Vector3D[]>(m_num)),
+	m_old_vel(std::make_unique<Vector3D[]>(m_num)),
 	m_ocl_context(nullptr),
 	m_ocl_cmd_queue(nullptr),
 	m_ocl_kernel(nullptr)
@@ -96,17 +98,12 @@ void Stars::init()
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		m_vel = std::make_unique<Vector3D[]>(m_num);
-
 		for (GLsizei i = 0; i < m_num; i++)
 		{
 			m_vel[i].x = distrib(gen);
 			m_vel[i].y = distrib(gen);
 			m_vel[i].z = distrib(gen);
 		}
-
-		m_old_pos = std::make_unique<Vector3D[]>(m_num);
-		m_old_vel = std::make_unique<Vector3D[]>(m_num);
 
 		//////////////////////////////////////////////////////
 
