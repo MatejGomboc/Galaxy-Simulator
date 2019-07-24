@@ -43,9 +43,12 @@ if __name__ == "__main__":
 	parser.add_argument("outputFileName", help="name of output C++ file with source as char string", type=str)
 	args = parser.parse_args()
 
-	if not args.inputFileName.lower().endswith(".cl"):
+	low_input_name = args.inputFileName.lower()
+	if not low_input_name.endswith(".cl") and not low_input_name.endswith(".clh"):
 		sys.exit("invalid input file extension: " + args.inputFileName)
-	if not args.outputFileName.lower().endswith(".cpp"):
+		
+	low_output_name = args.outputFileName.lower()
+	if not low_output_name.endswith(".cpp") and not low_output_name.endswith(".h"):
 		sys.exit("invalid output file extension: " + args.outputFileName)
 
 	if args.verbose:
@@ -73,7 +76,7 @@ if __name__ == "__main__":
 	stringSource = stringSource.replace("\\\n", "\\\\\\\n") # if inside a string
 	stringSource = stringSource.replace("\n", "\"\n\"") # for correct ending of new multi-line string
 
-	stringSource = "const char* " + args.inputFileName[:-3] + " = \n\"" + stringSource + "\"\n"
+	stringSource = "const char* ocl_src_" + args.inputFileName[:-3] + " = \n\"" + stringSource + "\"\n"
 
 	stringSource = empty_string_remover(stringSource) # remove redundant spaces and tabs
 	stringSource = stringSource.replace("\"\"", "") # remove empty multi-line string

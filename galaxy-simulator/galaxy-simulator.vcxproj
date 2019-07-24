@@ -113,8 +113,7 @@
 copy "$(SolutionDir)\glew\bin\x64\glew32.dll" "$(SolutionDir)$(Platform)\$(Configuration)\bin\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python $(ProjectDir)\oclProgramFileToString.py stars.cl stars_ocl.h</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -165,8 +164,7 @@ copy "$(SolutionDir)\glew\bin\x86\glew32.dll" "$(SolutionDir)$(Platform)\$(Confi
 copy "$(SolutionDir)\glew\bin\x64\glew32.dll" "$(SolutionDir)$(Platform)\$(Configuration)\bin\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python $(ProjectDir)\oclProgramFileToString.py -c stars.cl stars_ocl.h</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -209,9 +207,11 @@ copy "$(SolutionDir)\glew\bin\x86\glew32.dll" "$(SolutionDir)$(Platform)\$(Confi
     <ClInclude Include="camera.h" />
     <ClInclude Include="coordinate_axes.h" />
     <ClInclude Include="stars.h" />
+    <ClInclude Include="stars_ocl.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="oclProgramFileToString.py" />
     <None Include="stars.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

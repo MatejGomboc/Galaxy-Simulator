@@ -44,9 +44,15 @@
     <ClInclude Include="stars.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="stars_ocl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="stars.cl">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="oclProgramFileToString.py">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

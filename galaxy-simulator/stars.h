@@ -25,13 +25,14 @@ class Stars
 private:
 	struct Vector3D
 	{
-		float x;
-		float y;
-		float z;
+		GLfloat x;
+		GLfloat y;
+		GLfloat z;
 	};
 
-	bool m_initialised;
 	const GLsizei m_num;
+
+	bool m_initialised;
 	GLuint m_vbo;
 	std::unique_ptr<Vector3D[]> m_vel;
 	std::unique_ptr<Vector3D[]> m_old_pos;

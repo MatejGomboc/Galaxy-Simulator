@@ -22,15 +22,14 @@ float clamp(float value, const float min, const float max)
 
 
 kernel void propagate(global read_only float* old_pos, global read_only float* old_vel,
-	global write_only float* pos, global write_only float* vel,
-	const float min_pos, const float max_pos)
+	global write_only float* pos, global write_only float* vel)
 {
-	long long i = get_global_id(0);
+	unsigned long long i = get_global_id(0);
 
 	old_pos[i] = pos[i];
 	old_vel[i] = vel[i];
 
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
-	pos[i] = clamp(vel[i] + old_pos[i], -1.0f, 1.0f);
+	pos[i] = clamp(old_vel[i] + old_pos[i], -1.0f, 1.0f);
 }

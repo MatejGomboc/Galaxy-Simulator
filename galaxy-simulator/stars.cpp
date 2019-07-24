@@ -141,7 +141,7 @@ void Stars::init()
 
 				size_t ocl_devices_size;
 				clGetContextInfo(m_ocl_context, CL_CONTEXT_DEVICES, 0, nullptr, &ocl_devices_size);
-				cl_uint ocl_num_devices = ocl_devices_size / sizeof(cl_device_id);
+				size_t ocl_num_devices = ocl_devices_size / sizeof(cl_device_id);
 				if (ocl_num_devices != 1) continue;
 
 				cl_device_id ocl_device;
