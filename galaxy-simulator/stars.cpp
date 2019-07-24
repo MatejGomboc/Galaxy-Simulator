@@ -49,7 +49,7 @@ void Stars::release()
 			m_vbo = 0;
 		}
 
-		/*if (m_ocl_kernel != nullptr)
+		if (m_ocl_kernel != nullptr)
 		{
 			// TODO !! Why causes memory access violation ??
 			//clReleaseKernel(m_ocl_kernel);
@@ -68,7 +68,7 @@ void Stars::release()
 			// TODO !! Why causes memory access violation ??
 			//clReleaseCommandQueue(m_ocl_cmd_queue);
 			m_ocl_cmd_queue = nullptr;
-		}*/
+		}
 
 		m_initialised = false;
 	}
@@ -123,7 +123,7 @@ void Stars::init()
 
 		auto ocl_platforms = std::make_unique<cl_platform_id[]>(ocl_num_platforms);
 		clGetPlatformIDs(ocl_num_platforms, ocl_platforms.get(), nullptr);
-
+		
 		for (cl_uint i = 0; i < ocl_num_platforms + 1; i++)
 		{
 			if (i == ocl_num_platforms)
@@ -140,7 +140,7 @@ void Stars::init()
 					CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(ocl_platforms[i]),
 					0
 				};
-
+				
 				cl_int ocl_err;
 				m_ocl_context = clCreateContextFromType(ocl_context_properties, CL_DEVICE_TYPE_GPU, nullptr, nullptr, &ocl_err);
 				if (ocl_err != CL_SUCCESS) continue;
@@ -203,7 +203,7 @@ void Stars::init()
 					clReleaseCommandQueue(m_ocl_cmd_queue);
 					continue;
 				}
-
+				
 				break;
 			}
 		}
