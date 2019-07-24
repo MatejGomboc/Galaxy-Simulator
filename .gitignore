@@ -1,9 +1,11 @@
 galaxy-simulator.sdf
+galaxy-simulator.opensdf
 galaxy-simulator.v12.suo
 
 Win32/**
 
 x64/Debug/bin/galaxy-simulator.ilk
+x64/Debug/bin/ocl_build_log.txt
 x64/Debug/obj/**
 
 x64/Release/bin/galaxy-simulator.pdb

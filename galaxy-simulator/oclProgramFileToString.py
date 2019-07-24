@@ -84,6 +84,8 @@ if __name__ == "__main__":
 
 	if args.compact:
 		stringSource = empty_line_remover(stringSource) # remove empty lines
+		
+	stringSource += "\"\\0\";"
 
 	if args.verbose:
 		print("source as C++ char string:")

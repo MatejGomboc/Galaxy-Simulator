@@ -13,13 +13,16 @@
 */
 
 
-#include <iostream>
 #include <cstdlib>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "camera.h"
 #include "coordinate_axes.h"
 #include "stars.h"
+
+#ifdef DEBUG
+#include <iostream>
+#endif
 
 
 Camera camera;
@@ -134,6 +137,8 @@ int main(int argc, char** argv)
 	glutTimerFunc(100, timer, 0);
 
 	glutMainLoop();
+
+	std::cout << "exit\n";
 
 	return EXIT_SUCCESS;
 }

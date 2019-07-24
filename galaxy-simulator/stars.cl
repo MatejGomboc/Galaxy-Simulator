@@ -13,14 +13,6 @@
 */
 
 
-float clamp(float value, const float min, const float max)
-{
-	if (value > max) return max;
-	else if (value < min) return min;
-	else return value;
-}
-
-
 kernel void propagate(global read_only float* old_pos, global read_only float* old_vel,
 	global write_only float* pos, global write_only float* vel)
 {

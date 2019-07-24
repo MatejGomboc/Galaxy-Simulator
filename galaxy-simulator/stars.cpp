@@ -14,8 +14,13 @@
 
 
 #include "stars.h"
+#include "stars_ocl.h"
 #include <random>
 #include <stdexcept>
+
+#ifdef DEBUG
+#include <fstream>
+#endif
 
 
 Stars::Stars(GLulong num) :
@@ -44,9 +49,10 @@ void Stars::release()
 			m_vbo = 0;
 		}
 
-		if (m_ocl_kernel != nullptr)
+		/*if (m_ocl_kernel != nullptr)
 		{
-			clReleaseKernel(m_ocl_kernel);
+			// TODO !! Why causes memory access violation ??
+			//clReleaseKernel(m_ocl_kernel);
 			m_ocl_kernel = nullptr;
 		}
 
@@ -62,7 +68,7 @@ void Stars::release()
 			// TODO !! Why causes memory access violation ??
 			//clReleaseCommandQueue(m_ocl_cmd_queue);
 			m_ocl_cmd_queue = nullptr;
-		}
+		}*/
 
 		m_initialised = false;
 	}
@@ -142,13 +148,61 @@ void Stars::init()
 				size_t ocl_devices_size;
 				clGetContextInfo(m_ocl_context, CL_CONTEXT_DEVICES, 0, nullptr, &ocl_devices_size);
 				size_t ocl_num_devices = ocl_devices_size / sizeof(cl_device_id);
-				if (ocl_num_devices != 1) continue;
+				if (ocl_num_devices != 1)
+				{
+					clReleaseContext(m_ocl_context);
+					continue;
+				}
 
 				cl_device_id ocl_device;
 				clGetContextInfo(m_ocl_context, CL_CONTEXT_DEVICES, sizeof(cl_device_id), &ocl_device, nullptr);
 
 				m_ocl_cmd_queue = clCreateCommandQueue(m_ocl_context, ocl_device, 0, &ocl_err);
-				if (ocl_err != CL_SUCCESS) continue;
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					continue;
+				}
+
+				cl_program ocl_program = clCreateProgramWithSource(m_ocl_context, 1, &ocl_src_stars, nullptr, &ocl_err);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					continue;
+				}
+
+				ocl_err = clBuildProgram(ocl_program, 1, &ocl_device, "", nullptr, nullptr);
+
+#ifdef DEBUG
+				size_t log_str_size;
+				clGetProgramBuildInfo(ocl_program, ocl_device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_str_size);
+
+				auto log_str = std::make_unique<char[]>(log_str_size);
+				clGetProgramBuildInfo(ocl_program, ocl_device, CL_PROGRAM_BUILD_LOG, log_str_size, log_str.get(), nullptr);
+
+				std::ofstream log_file("ocl_build_log.txt");
+				log_file << log_str.get();
+				log_file.close();
+#endif
+
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseProgram(ocl_program);
+					continue;
+				}
+
+				m_ocl_kernel = clCreateKernel(ocl_program, "propagate", &ocl_err);
+				clReleaseProgram(ocl_program);
+
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					continue;
+				}
 
 				break;
 			}
