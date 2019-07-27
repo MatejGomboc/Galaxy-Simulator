@@ -49,26 +49,15 @@ void Stars::release()
 			m_vbo = 0;
 		}
 
-		if (m_ocl_kernel != nullptr)
-		{
-			// TODO !! Why causes memory access violation ??
-			//clReleaseKernel(m_ocl_kernel);
-			m_ocl_kernel = nullptr;
-		}
+		clFinish(m_ocl_cmd_queue);
+		
+		clReleaseContext(m_ocl_context);
+		clReleaseCommandQueue(m_ocl_cmd_queue);
+		clReleaseKernel(m_ocl_kernel);
 
-		if (m_ocl_context != nullptr)
-		{
-			// TODO !! Why causes memory access violation ??
-			//clReleaseContext(m_ocl_context);
-			m_ocl_context = nullptr;
-		}
-
-		if (m_ocl_cmd_queue != nullptr)
-		{
-			// TODO !! Why causes memory access violation ??
-			//clReleaseCommandQueue(m_ocl_cmd_queue);
-			m_ocl_cmd_queue = nullptr;
-		}
+		m_ocl_context = nullptr;
+		m_ocl_cmd_queue = nullptr;
+		m_ocl_kernel = nullptr;
 
 		m_initialised = false;
 	}
