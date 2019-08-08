@@ -23,20 +23,21 @@
 class Stars
 {
 private:
-	struct Vector3D
+	struct Vector4D
 	{
 		GLfloat x;
 		GLfloat y;
 		GLfloat z;
+		GLfloat w;
 	};
 
 	const GLsizei m_num;
 
 	bool m_initialised;
 	GLuint m_vbo;
-	std::unique_ptr<Vector3D[]> m_vel;
-	std::unique_ptr<Vector3D[]> m_old_pos;
-	std::unique_ptr<Vector3D[]> m_old_vel;
+	std::unique_ptr<Vector4D[]> m_vel;
+	std::unique_ptr<Vector4D[]> m_old_pos;
+	std::unique_ptr<Vector4D[]> m_old_vel;
 	cl_context m_ocl_context;
 	cl_command_queue m_ocl_cmd_queue;
 	cl_kernel m_ocl_kernel;

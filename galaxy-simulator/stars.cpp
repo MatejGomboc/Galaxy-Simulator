@@ -27,9 +27,9 @@ Stars::Stars(GLulong num) :
 	m_initialised(false),
 	m_num(num),
 	m_vbo(0),
-	m_vel(std::make_unique<Vector3D[]>(m_num)),
-	m_old_pos(std::make_unique<Vector3D[]>(m_num)),
-	m_old_vel(std::make_unique<Vector3D[]>(m_num)),
+	m_vel(std::make_unique<Vector4D[]>(m_num)),
+	m_old_pos(std::make_unique<Vector4D[]>(m_num)),
+	m_old_vel(std::make_unique<Vector4D[]>(m_num)),
 	m_ocl_context(nullptr),
 	m_ocl_cmd_queue(nullptr),
 	m_ocl_kernel(nullptr),
@@ -116,15 +116,16 @@ void Stars::init()
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glBufferData(GL_ARRAY_BUFFER, m_num * sizeof(Vector3D), nullptr, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_num * sizeof(Vector4D), nullptr, GL_STATIC_DRAW);
 		
-		auto pos = reinterpret_cast<Vector3D*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
+		auto pos = reinterpret_cast<Vector4D*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
 
 		for (GLsizei i = 0; i < m_num; i++)
 		{
 			pos[i].x = distrib(gen);
 			pos[i].y = distrib(gen);
 			pos[i].z = distrib(gen);
+			pos[i].w = 1.0f;
 		}
 
 		glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -135,6 +136,7 @@ void Stars::init()
 			m_vel[i].x = distrib(gen);
 			m_vel[i].y = distrib(gen);
 			m_vel[i].z = distrib(gen);
+			m_vel[i].w = 1.0f;
 		}
 
 		cl_uint ocl_num_platforms;
@@ -238,7 +240,7 @@ void Stars::init()
 				}
 
 				m_ocl_buffer_vel = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-					m_num * sizeof(Vector3D), m_vel.get(), &ocl_err);
+					m_num * sizeof(Vector4D), m_vel.get(), &ocl_err);
 
 				if (ocl_err != CL_SUCCESS)
 				{
@@ -250,7 +252,7 @@ void Stars::init()
 				}
 
 				m_ocl_buffer_old_pos = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-					m_num * sizeof(Vector3D), m_old_pos.get(), &ocl_err);
+					m_num * sizeof(Vector4D), m_old_pos.get(), &ocl_err);
 
 				if (ocl_err != CL_SUCCESS)
 				{
@@ -263,7 +265,7 @@ void Stars::init()
 				}
 
 				m_ocl_buffer_old_vel = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-					m_num * sizeof(Vector3D), m_old_vel.get(), &ocl_err);
+					m_num * sizeof(Vector4D), m_old_vel.get(), &ocl_err);
 
 				if (ocl_err != CL_SUCCESS)
 				{
@@ -351,10 +353,10 @@ void Stars::calculate()
 		if (ocl_err != CL_SUCCESS)
 		{
 			release();
-			throw std::exception("OpenCL cannot aquire OpenGL buffer.");
+			throw std::exception("OpenCL cannot acquire OpenGL buffer.");
 		}
 
-		const size_t ocl_global_work_size = m_num * 3;
+		const size_t ocl_global_work_size = m_num;
 		ocl_err = clEnqueueNDRangeKernel(m_ocl_cmd_queue, m_ocl_kernel, 1, nullptr, &ocl_global_work_size, nullptr, 0, nullptr, nullptr);
 		if (ocl_err != CL_SUCCESS)
 		{
@@ -388,7 +390,7 @@ void Stars::draw()
 	if (m_initialised)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-		glVertexPointer(3, GL_FLOAT, 0, nullptr);
+		glVertexPointer(4, GL_FLOAT, 0, nullptr);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glColor3f(1.0f, 1.0f, 0.0f);
 		glDrawArrays(GL_POINTS, 0, m_num);

@@ -30,7 +30,7 @@ float wrap(float value, const float min, const float max)
 	return value;
 }
 
-kernel void propagate(global float* pos, global float* vel, global float* old_pos, global float* old_vel)
+kernel void propagate(global float4* pos, global float4* vel, global float4* old_pos, global float4* old_vel)
 {
 	unsigned long long i = get_global_id(0);
 
@@ -39,5 +39,9 @@ kernel void propagate(global float* pos, global float* vel, global float* old_po
 
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
-	pos[i] = wrap(old_vel[i] + old_pos[i], -1.0f, 1.0f);
+	float pos_x = wrap(old_vel[i].x + old_pos[i].x, -1.0f, 1.0f);
+	float pos_y = wrap(old_vel[i].y + old_pos[i].y, -1.0f, 1.0f);
+	float pos_z = wrap(old_vel[i].z + old_pos[i].z, -1.0f, 1.0f);
+
+	pos[i] = (float4)(pos_x, pos_y, pos_z, 1.0f);
 }
