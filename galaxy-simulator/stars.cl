@@ -12,9 +12,25 @@
 	this program. If not, see <https://www.gnu.org/licenses/>.
 */
 
+float wrap(float value, const float min, const float max)
+{
+	if (min == max) return min;
+	const float difference = max - min;
 
-kernel void propagate(global read_only float* old_pos, global read_only float* old_vel,
-	global write_only float* pos, global write_only float* vel)
+	while (value < min)
+	{
+		value += difference;
+	}
+
+	while (value > max)
+	{
+		value -= difference;
+	}
+
+	return value;
+}
+
+kernel void propagate(global float* pos, global float* vel, global float* old_pos, global float* old_vel)
 {
 	unsigned long long i = get_global_id(0);
 
@@ -23,5 +39,5 @@ kernel void propagate(global read_only float* old_pos, global read_only float* o
 
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
-	pos[i] = clamp(old_vel[i] + old_pos[i], -1.0f, 1.0f);
+	pos[i] = wrap(old_vel[i] + old_pos[i], -1.0f, 1.0f);
 }

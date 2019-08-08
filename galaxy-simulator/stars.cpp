@@ -32,7 +32,11 @@ Stars::Stars(GLulong num) :
 	m_old_vel(std::make_unique<Vector3D[]>(m_num)),
 	m_ocl_context(nullptr),
 	m_ocl_cmd_queue(nullptr),
-	m_ocl_kernel(nullptr)
+	m_ocl_kernel(nullptr),
+	m_ocl_buffer_pos(nullptr),
+	m_ocl_buffer_vel(nullptr),
+	m_ocl_buffer_old_pos(nullptr),
+	m_ocl_buffer_old_vel(nullptr)
 {
 }
 
@@ -41,6 +45,49 @@ void Stars::release()
 {
 	if (m_initialised)
 	{
+		if (m_ocl_cmd_queue != nullptr)
+		{
+			clFinish(m_ocl_cmd_queue);
+			clReleaseCommandQueue(m_ocl_cmd_queue);
+			m_ocl_cmd_queue = nullptr;
+		}
+
+		if (m_ocl_kernel != nullptr)
+		{
+			clReleaseKernel(m_ocl_kernel);
+			m_ocl_kernel = nullptr;
+		}
+
+		if (m_ocl_context != nullptr)
+		{
+			clReleaseContext(m_ocl_context);
+			m_ocl_context = nullptr;
+		}
+
+		if (m_ocl_buffer_pos != nullptr)
+		{
+			clReleaseMemObject(m_ocl_buffer_pos);
+			m_ocl_buffer_pos = nullptr;
+		}
+
+		if (m_ocl_buffer_vel != nullptr)
+		{
+			clReleaseMemObject(m_ocl_buffer_vel);
+			m_ocl_buffer_vel = nullptr;
+		}
+
+		if (m_ocl_buffer_old_pos != nullptr)
+		{
+			clReleaseMemObject(m_ocl_buffer_old_pos);
+			m_ocl_buffer_old_pos = nullptr;
+		}
+
+		if (m_ocl_buffer_old_vel != nullptr)
+		{
+			clReleaseMemObject(m_ocl_buffer_old_vel);
+			m_ocl_buffer_old_vel = nullptr;
+		}
+
 		if (m_vbo != 0)
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -48,16 +95,6 @@ void Stars::release()
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			m_vbo = 0;
 		}
-
-		clFinish(m_ocl_cmd_queue);
-		
-		clReleaseContext(m_ocl_context);
-		clReleaseCommandQueue(m_ocl_cmd_queue);
-		clReleaseKernel(m_ocl_kernel);
-
-		m_ocl_context = nullptr;
-		m_ocl_cmd_queue = nullptr;
-		m_ocl_kernel = nullptr;
 
 		m_initialised = false;
 	}
@@ -99,8 +136,6 @@ void Stars::init()
 			m_vel[i].y = distrib(gen);
 			m_vel[i].z = distrib(gen);
 		}
-
-		//////////////////////////////////////////////////////
 
 		cl_uint ocl_num_platforms;
 		clGetPlatformIDs(0, nullptr, &ocl_num_platforms);
@@ -192,6 +227,106 @@ void Stars::init()
 					clReleaseCommandQueue(m_ocl_cmd_queue);
 					continue;
 				}
+
+				m_ocl_buffer_pos = clCreateFromGLBuffer(m_ocl_context, CL_MEM_READ_WRITE, m_vbo, &ocl_err);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					continue;
+				}
+
+				m_ocl_buffer_vel = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+					m_num * sizeof(Vector3D), m_vel.get(), &ocl_err);
+
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					continue;
+				}
+
+				m_ocl_buffer_old_pos = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+					m_num * sizeof(Vector3D), m_old_pos.get(), &ocl_err);
+
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					continue;
+				}
+
+				m_ocl_buffer_old_vel = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+					m_num * sizeof(Vector3D), m_old_vel.get(), &ocl_err);
+
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					clReleaseMemObject(m_ocl_buffer_old_pos);
+					continue;
+				}
+
+				ocl_err = clSetKernelArg(m_ocl_kernel, 0, sizeof(cl_mem), &m_ocl_buffer_pos);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					clReleaseMemObject(m_ocl_buffer_old_pos);
+					clReleaseMemObject(m_ocl_buffer_old_vel);
+					continue;
+				}
+
+				ocl_err = clSetKernelArg(m_ocl_kernel, 1, sizeof(cl_mem), &m_ocl_buffer_vel);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					clReleaseMemObject(m_ocl_buffer_old_pos);
+					clReleaseMemObject(m_ocl_buffer_old_vel);
+					continue;
+				}
+
+				ocl_err = clSetKernelArg(m_ocl_kernel, 2, sizeof(cl_mem), &m_ocl_buffer_old_pos);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					clReleaseMemObject(m_ocl_buffer_old_pos);
+					clReleaseMemObject(m_ocl_buffer_old_vel);
+					continue;
+				}
+
+				ocl_err = clSetKernelArg(m_ocl_kernel, 3, sizeof(cl_mem), &m_ocl_buffer_old_vel);
+				if (ocl_err != CL_SUCCESS)
+				{
+					clReleaseContext(m_ocl_context);
+					clReleaseCommandQueue(m_ocl_cmd_queue);
+					clReleaseKernel(m_ocl_kernel);
+					clReleaseMemObject(m_ocl_buffer_pos);
+					clReleaseMemObject(m_ocl_buffer_vel);
+					clReleaseMemObject(m_ocl_buffer_old_pos);
+					clReleaseMemObject(m_ocl_buffer_old_vel);
+					continue;
+				}
 				
 				break;
 			}
@@ -210,7 +345,36 @@ void Stars::calculate()
 {
 	if (m_initialised)
 	{
-		// TODO !!
+		glFinish();
+
+		cl_int ocl_err = clEnqueueAcquireGLObjects(m_ocl_cmd_queue, 1, &m_ocl_buffer_pos, 0, nullptr, nullptr);
+		if (ocl_err != CL_SUCCESS)
+		{
+			release();
+			throw std::exception("OpenCL cannot aquire OpenGL buffer.");
+		}
+
+		const size_t ocl_global_work_size = m_num * 3;
+		ocl_err = clEnqueueNDRangeKernel(m_ocl_cmd_queue, m_ocl_kernel, 1, nullptr, &ocl_global_work_size, nullptr, 0, nullptr, nullptr);
+		if (ocl_err != CL_SUCCESS)
+		{
+			release();
+			throw std::exception("OpenCL cannot run kernel.");
+		}
+
+		ocl_err = clEnqueueReleaseGLObjects(m_ocl_cmd_queue, 1, &m_ocl_buffer_pos, 0, nullptr, nullptr);
+		if (ocl_err != CL_SUCCESS)
+		{
+			release();
+			throw std::exception("OpenCL cannot release OpenGL buffer.");
+		}
+
+		ocl_err = clFinish(m_ocl_cmd_queue);
+		if (ocl_err != CL_SUCCESS)
+		{
+			release();
+			throw std::exception("OpenCL cannot finish.");
+		}
 	}
 	else
 	{
