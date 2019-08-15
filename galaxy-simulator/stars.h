@@ -36,15 +36,12 @@ private:
 	bool m_initialised;
 	GLuint m_vbo;
 	std::unique_ptr<Vector4D[]> m_vel;
-	std::unique_ptr<Vector4D[]> m_old_pos;
-	std::unique_ptr<Vector4D[]> m_old_vel;
 	cl_context m_ocl_context;
 	cl_command_queue m_ocl_cmd_queue;
 	cl_kernel m_ocl_kernel;
 	cl_mem m_ocl_buffer_pos;
 	cl_mem m_ocl_buffer_vel;
-	cl_mem m_ocl_buffer_old_pos;
-	cl_mem m_ocl_buffer_old_vel;
+	cl_mem m_ocl_buffer_acc;
 
 	void release();
 

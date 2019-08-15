@@ -17,6 +17,7 @@
 #include "stars_ocl.h"
 #include <random>
 #include <stdexcept>
+#include <string>
 
 #ifdef DEBUG
 #include <fstream>
@@ -25,18 +26,15 @@
 
 Stars::Stars(GLulong num) :
 	m_initialised(false),
-	m_num(num),
+	m_num((num < 2) ? 2 : num),
 	m_vbo(0),
 	m_vel(std::make_unique<Vector4D[]>(m_num)),
-	m_old_pos(std::make_unique<Vector4D[]>(m_num)),
-	m_old_vel(std::make_unique<Vector4D[]>(m_num)),
 	m_ocl_context(nullptr),
 	m_ocl_cmd_queue(nullptr),
 	m_ocl_kernel(nullptr),
 	m_ocl_buffer_pos(nullptr),
 	m_ocl_buffer_vel(nullptr),
-	m_ocl_buffer_old_pos(nullptr),
-	m_ocl_buffer_old_vel(nullptr)
+	m_ocl_buffer_acc(nullptr)
 {
 }
 
@@ -76,16 +74,10 @@ void Stars::release()
 			m_ocl_buffer_vel = nullptr;
 		}
 
-		if (m_ocl_buffer_old_pos != nullptr)
+		if (m_ocl_buffer_acc != nullptr)
 		{
-			clReleaseMemObject(m_ocl_buffer_old_pos);
-			m_ocl_buffer_old_pos = nullptr;
-		}
-
-		if (m_ocl_buffer_old_vel != nullptr)
-		{
-			clReleaseMemObject(m_ocl_buffer_old_vel);
-			m_ocl_buffer_old_vel = nullptr;
+			clReleaseMemObject(m_ocl_buffer_acc);
+			m_ocl_buffer_acc = nullptr;
 		}
 
 		if (m_vbo != 0)
@@ -112,7 +104,7 @@ void Stars::init()
 	if (!m_initialised)
 	{
 		std::random_device gen;
-		std::uniform_real_distribution<GLfloat> distrib(-1.0f, 1.0f);
+		std::uniform_real_distribution<GLfloat> distrib(-0.5f, 0.5f);
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -136,7 +128,7 @@ void Stars::init()
 			m_vel[i].x = distrib(gen);
 			m_vel[i].y = distrib(gen);
 			m_vel[i].z = distrib(gen);
-			m_vel[i].w = 1.0f;
+			m_vel[i].w = 0.0f;
 		}
 
 		cl_uint ocl_num_platforms;
@@ -207,7 +199,7 @@ void Stars::init()
 				auto log_str = std::make_unique<char[]>(log_str_size);
 				clGetProgramBuildInfo(ocl_program, ocl_device, CL_PROGRAM_BUILD_LOG, log_str_size, log_str.get(), nullptr);
 
-				std::ofstream log_file("ocl_build_log.txt");
+				std::ofstream log_file("ocl_build_log_" + std::to_string(i) + ".txt");
 				log_file << log_str.get();
 				log_file.close();
 #endif
@@ -251,8 +243,8 @@ void Stars::init()
 					continue;
 				}
 
-				m_ocl_buffer_old_pos = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-					m_num * sizeof(Vector4D), m_old_pos.get(), &ocl_err);
+				m_ocl_buffer_acc = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE,
+					(m_num * (m_num - 1) / 2) * sizeof(cl_float), nullptr, &ocl_err);
 
 				if (ocl_err != CL_SUCCESS)
 				{
@@ -261,20 +253,6 @@ void Stars::init()
 					clReleaseKernel(m_ocl_kernel);
 					clReleaseMemObject(m_ocl_buffer_pos);
 					clReleaseMemObject(m_ocl_buffer_vel);
-					continue;
-				}
-
-				m_ocl_buffer_old_vel = clCreateBuffer(m_ocl_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-					m_num * sizeof(Vector4D), m_old_vel.get(), &ocl_err);
-
-				if (ocl_err != CL_SUCCESS)
-				{
-					clReleaseContext(m_ocl_context);
-					clReleaseCommandQueue(m_ocl_cmd_queue);
-					clReleaseKernel(m_ocl_kernel);
-					clReleaseMemObject(m_ocl_buffer_pos);
-					clReleaseMemObject(m_ocl_buffer_vel);
-					clReleaseMemObject(m_ocl_buffer_old_pos);
 					continue;
 				}
 
@@ -286,8 +264,7 @@ void Stars::init()
 					clReleaseKernel(m_ocl_kernel);
 					clReleaseMemObject(m_ocl_buffer_pos);
 					clReleaseMemObject(m_ocl_buffer_vel);
-					clReleaseMemObject(m_ocl_buffer_old_pos);
-					clReleaseMemObject(m_ocl_buffer_old_vel);
+					clReleaseMemObject(m_ocl_buffer_acc);
 					continue;
 				}
 
@@ -299,12 +276,11 @@ void Stars::init()
 					clReleaseKernel(m_ocl_kernel);
 					clReleaseMemObject(m_ocl_buffer_pos);
 					clReleaseMemObject(m_ocl_buffer_vel);
-					clReleaseMemObject(m_ocl_buffer_old_pos);
-					clReleaseMemObject(m_ocl_buffer_old_vel);
+					clReleaseMemObject(m_ocl_buffer_acc);
 					continue;
 				}
 
-				ocl_err = clSetKernelArg(m_ocl_kernel, 2, sizeof(cl_mem), &m_ocl_buffer_old_pos);
+				ocl_err = clSetKernelArg(m_ocl_kernel, 2, sizeof(cl_mem), &m_ocl_buffer_acc);
 				if (ocl_err != CL_SUCCESS)
 				{
 					clReleaseContext(m_ocl_context);
@@ -312,21 +288,7 @@ void Stars::init()
 					clReleaseKernel(m_ocl_kernel);
 					clReleaseMemObject(m_ocl_buffer_pos);
 					clReleaseMemObject(m_ocl_buffer_vel);
-					clReleaseMemObject(m_ocl_buffer_old_pos);
-					clReleaseMemObject(m_ocl_buffer_old_vel);
-					continue;
-				}
-
-				ocl_err = clSetKernelArg(m_ocl_kernel, 3, sizeof(cl_mem), &m_ocl_buffer_old_vel);
-				if (ocl_err != CL_SUCCESS)
-				{
-					clReleaseContext(m_ocl_context);
-					clReleaseCommandQueue(m_ocl_cmd_queue);
-					clReleaseKernel(m_ocl_kernel);
-					clReleaseMemObject(m_ocl_buffer_pos);
-					clReleaseMemObject(m_ocl_buffer_vel);
-					clReleaseMemObject(m_ocl_buffer_old_pos);
-					clReleaseMemObject(m_ocl_buffer_old_vel);
+					clReleaseMemObject(m_ocl_buffer_acc);
 					continue;
 				}
 				

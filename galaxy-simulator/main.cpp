@@ -23,7 +23,7 @@
 
 Camera camera;
 Coordinate_axes coordinate_axes;
-Stars stars(1000);
+Stars stars(100);
 
 
 void init(void)
@@ -40,6 +40,10 @@ void init(void)
 
 	glEnable(GL_POLYGON_SMOOTH);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
+
+	camera.set_phi(45.0f);
+	camera.set_theta(45.0f);
+	camera.set_zoom(5.0f);
 
 	stars.init();
 }
