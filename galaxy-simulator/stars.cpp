@@ -104,7 +104,7 @@ void Stars::init()
 	if (!m_initialised)
 	{
 		std::random_device gen;
-		std::uniform_real_distribution<GLfloat> distrib(-0.5f, 0.5f);
+		std::uniform_real_distribution<GLfloat> distrib_pos(-0.1f, 0.1f);
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -114,9 +114,9 @@ void Stars::init()
 
 		for (GLsizei i = 0; i < m_num; i++)
 		{
-			pos[i].x = distrib(gen);
-			pos[i].y = distrib(gen);
-			pos[i].z = distrib(gen);
+			pos[i].x = distrib_pos(gen);
+			pos[i].y = distrib_pos(gen);
+			pos[i].z = distrib_pos(gen);
 			pos[i].w = 1.0f;
 		}
 
@@ -125,9 +125,9 @@ void Stars::init()
 
 		for (GLsizei i = 0; i < m_num; i++)
 		{
-			m_vel[i].x = distrib(gen);
-			m_vel[i].y = distrib(gen);
-			m_vel[i].z = distrib(gen);
+			m_vel[i].x = 0.0f;
+			m_vel[i].y = 0.0f;
+			m_vel[i].z = 0.0f;
 			m_vel[i].w = 0.0f;
 		}
 

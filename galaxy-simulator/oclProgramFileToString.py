@@ -74,7 +74,7 @@ if __name__ == "__main__":
 	stringSource = stringSource.replace("\\\t", "\\\\\\\t") # if inside a string
 	stringSource = stringSource.replace("\\\v", "\\\\\\\v") # if inside a string
 	stringSource = stringSource.replace("\\\n", "\\\\\\\n") # if inside a string
-	stringSource = stringSource.replace("\n", "\"\n\"") # for correct ending of new multi-line string
+	stringSource = stringSource.replace("\n", "\\n\"\n\"") # for correct ending of new multi-line string
 
 	stringSource = "const char* ocl_src_" + args.inputFileName[:-3] + " = \n\"" + stringSource + "\"\n"
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 	if args.compact:
 		stringSource = empty_line_remover(stringSource) # remove empty lines
 		
-	stringSource += "\"\\0\";"
+	stringSource += "\"\\0\";\n"
 
 	if args.verbose:
 		print("source as C++ char string:")

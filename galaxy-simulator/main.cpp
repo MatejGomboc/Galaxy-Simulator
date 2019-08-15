@@ -23,7 +23,7 @@
 
 Camera camera;
 Coordinate_axes coordinate_axes;
-Stars stars(100);
+Stars stars(1000);
 
 
 void init(void)
@@ -117,7 +117,7 @@ void timer(int value)
 {
 	stars.calculate();
 	glutPostRedisplay();
-	glutTimerFunc(100, timer, 0);
+	glutTimerFunc(75, timer, 0);
 }
 
 int main(int argc, char** argv)
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
-	glutTimerFunc(100, timer, 0);
+	glutTimerFunc(75, timer, 0);
 
 	glutMainLoop();
 

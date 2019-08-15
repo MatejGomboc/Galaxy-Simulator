@@ -21,47 +21,18 @@ unsigned long long indx(unsigned long long i, unsigned long long j)
 
 kernel void propagate(global float4* pos, global float4* vel, global float* acc_matr)
 {
-	const float step = 0.02f;
-	const float mass = 0.5f;
+	const float step = 0.01f;
+	const float mass = 0.1f;
 
 	unsigned long long i = get_global_id(0);
 
 	pos[i] = pos[i] + (float4)(step * vel[i].xyz, 0.0f);
 
-	if (pos[i].x > 1.0f)
+	if (length(pos[i].xyz) > 1.0f)
 	{
-		pos[i] = (float4)(2.0f - pos[i].x, pos[i].yz, 1.0f);
-		vel[i] = (float4)(-vel[i].x, vel[i].yz, 0.0f);
-	}
-
-	if (pos[i].x < -1.0f)
-	{
-		pos[i] = (float4)(-2.0f - pos[i].x, pos[i].yz, 1.0f);
-		vel[i] = (float4)(-vel[i].x, vel[i].yz, 0.0f);
-	}
-
-	if (pos[i].y > 1.0f)
-	{
-		pos[i] = (float4)(pos[i].x, 2.0f - pos[i].y, pos[i].z, 1.0f);
-		vel[i] = (float4)(pos[i].x, -vel[i].y, vel[i].z, 0.0f);
-	}
-
-	if (pos[i].y < -1.0f)
-	{
-		pos[i] = (float4)(pos[i].x, -2.0f - pos[i].y, pos[i].z, 1.0f);
-		vel[i] = (float4)(pos[i].x, -vel[i].y, vel[i].z, 0.0f);
-	}
-
-	if (pos[i].z > 1.0f)
-	{
-		pos[i] = (float4)(pos[i].xy, 2.0f - pos[i].z, 1.0f);
-		vel[i] = (float4)(pos[i].xy, -vel[i].z, 0.0f);
-	}
-
-	if (pos[i].z < -1.0f)
-	{
-		pos[i] = (float4)(pos[i].xy, -2.0f - pos[i].z, 1.0f);
-		vel[i] = (float4)(pos[i].xy, -vel[i].z, 0.0f);
+		float3 pos_norm = normalize(pos[i].xyz);
+		pos[i] = (float4)(2.0f * pos_norm - pos[i].xyz, 1.0f);
+		vel[i] = (float4)(vel[i].xyz - dot(pos_norm, vel[i].xyz) * pos_norm, 0.0f);
 	}
 
 	barrier(CLK_GLOBAL_MEM_FENCE);
@@ -70,7 +41,7 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	{
 		float r = distance(pos[i], pos[j]);
 
-		if (r * r > mass)
+		if (100 * r * r > mass)
 		{
 			acc_matr[indx(i, j)] = mass / r / r / r;
 		}
@@ -85,14 +56,15 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	float4 acc = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 	for (unsigned long long j = 0; j < i; j++)
 	{
-		if (acc_matr[indx(j, i)] > 0.0f) acc += acc_matr[indx(j, i)] * (pos[i] - pos[j]);
+		acc += acc_matr[indx(j, i)] * (pos[i] - pos[j]);
 	}
 	for (unsigned long long j = i + 1; j < get_global_size(0); j++)
 	{
-		if (acc_matr[indx(i, j)] > 0.0f) acc += acc_matr[indx(i, j)] * (pos[i] - pos[j]);
+		acc += acc_matr[indx(i, j)] * (pos[i] - pos[j]);
 	}
 
 	vel[i] = vel[i] + step * acc;
 
-	vel[i] = (float4)(clamp(vel[i].x, -1.0f, 1.0f), clamp(vel[i].y, -1.0f, 1.0f), clamp(vel[i].z, -1.0f, 1.0f), 0.0f);
+	if (length(vel[i]) > 1.0f)
+		vel[i] = normalize(vel[i]);
 }
