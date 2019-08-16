@@ -22,7 +22,7 @@ unsigned long long indx(unsigned long long i, unsigned long long j)
 kernel void propagate(global float4* pos, global float4* vel, global float* acc_matr)
 {
 	const float step = 0.01f;
-	const float mass = 0.1f;
+	const float mass = 0.00009f;
 
 	unsigned long long i = get_global_id(0);
 
@@ -41,13 +41,13 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	{
 		float r = distance(pos[i], pos[j]);
 
-		if (100 * r * r > mass)
+		if (r > 0.05f)
 		{
 			acc_matr[indx(i, j)] = mass / r / r / r;
 		}
 		else
 		{
-			acc_matr[indx(i, j)] = 0.0f;
+			acc_matr[indx(i, j)] = -0.5f;
 		}
 	}
 
@@ -56,11 +56,11 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	float4 acc = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
 	for (unsigned long long j = 0; j < i; j++)
 	{
-		acc += acc_matr[indx(j, i)] * (pos[i] - pos[j]);
+		acc += acc_matr[indx(j, i)] * (pos[j] - pos[i]);
 	}
 	for (unsigned long long j = i + 1; j < get_global_size(0); j++)
 	{
-		acc += acc_matr[indx(i, j)] * (pos[i] - pos[j]);
+		acc += acc_matr[indx(i, j)] * (pos[j] - pos[i]);
 	}
 
 	vel[i] = vel[i] + step * acc;

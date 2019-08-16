@@ -104,7 +104,7 @@ void Stars::init()
 	if (!m_initialised)
 	{
 		std::random_device gen;
-		std::uniform_real_distribution<GLfloat> distrib_pos(-0.1f, 0.1f);
+		std::uniform_real_distribution<GLfloat> distrib_pos(-0.5f, 0.5f);
 
 		glGenBuffers(1, &m_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -116,20 +116,17 @@ void Stars::init()
 		{
 			pos[i].x = distrib_pos(gen);
 			pos[i].y = distrib_pos(gen);
-			pos[i].z = distrib_pos(gen);
+			pos[i].z = 0.0f;
 			pos[i].w = 1.0f;
+
+			m_vel[i].x = -pos[i].y;
+			m_vel[i].y = pos[i].x;
+			m_vel[i].z = 0.0f;
+			m_vel[i].w = 0.0f;
 		}
 
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		for (GLsizei i = 0; i < m_num; i++)
-		{
-			m_vel[i].x = 0.0f;
-			m_vel[i].y = 0.0f;
-			m_vel[i].z = 0.0f;
-			m_vel[i].w = 0.0f;
-		}
 
 		cl_uint ocl_num_platforms;
 		clGetPlatformIDs(0, nullptr, &ocl_num_platforms);
