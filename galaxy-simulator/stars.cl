@@ -13,7 +13,7 @@
 */
 
 
-unsigned long long indx(unsigned long long i, unsigned long long j)
+unsigned long indx(unsigned long i, unsigned long j)
 {
 	return (j * (j - 1) / 2 + i);
 }
@@ -24,7 +24,7 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	constant float step = 0.01f;
 	constant float mass = 0.00009f;
 
-	unsigned long long i = get_global_id(0);
+	unsigned long i = get_global_id(0);
 
 	pos[i] = pos[i] + (float4)(step * vel[i].xyz, 0.0f);
 
@@ -37,7 +37,7 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
-	for (unsigned long long j = i + 1; j < get_global_size(0); j++)
+	for (unsigned long j = i + 1; j < get_global_size(0); j++)
 	{
 		float r = distance(pos[i], pos[j]);
 
@@ -54,13 +54,13 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
 	float4 acc = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-	for (unsigned long long k = 0; k < i; k++)
+	for (unsigned long j = 0; j < i; j++)
 	{
-		acc += acc_matr[indx(k, i)] * (pos[k] - pos[i]);
+		acc += acc_matr[indx(j, i)] * (pos[j] - pos[i]);
 	}
-	for (unsigned long long l = i + 1; l < get_global_size(0); l++)
+	for (unsigned long j = i + 1; j < get_global_size(0); j++)
 	{
-		acc += acc_matr[indx(i, l)] * (pos[l] - pos[i]);
+		acc += acc_matr[indx(i, j)] * (pos[j] - pos[i]);
 	}
 
 	vel[i] = vel[i] + step * acc;

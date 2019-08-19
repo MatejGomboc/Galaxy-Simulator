@@ -49,12 +49,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="oclProgramFileToString.py">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="stars.cl">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="oclProgramFileToString.py">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>
