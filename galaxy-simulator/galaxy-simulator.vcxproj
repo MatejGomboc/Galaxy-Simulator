@@ -213,7 +213,11 @@ copy "$(SolutionDir)\glew\bin\x86\glew32.dll" "$(SolutionDir)$(Platform)\$(Confi
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="oclProgramFileToString.py" />
+    <CustomBuild Include="oclProgramFileToString.py">
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</DeploymentContent>
+    </CustomBuild>
     <CustomBuild Include="stars.cl">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</DeploymentContent>
       <FileType>Document</FileType>

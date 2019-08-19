@@ -187,7 +187,7 @@ void Stars::init()
 					continue;
 				}
 
-				ocl_err = clBuildProgram(ocl_program, 1, &ocl_device, "", nullptr, nullptr);
+				ocl_err = clBuildProgram(ocl_program, 1, &ocl_device, "-cl-fast-relaxed-math", nullptr, nullptr);
 
 #ifdef DEBUG
 				size_t log_str_size;

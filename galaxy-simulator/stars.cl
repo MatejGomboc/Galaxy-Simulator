@@ -21,8 +21,8 @@ unsigned long long indx(unsigned long long i, unsigned long long j)
 
 kernel void propagate(global float4* pos, global float4* vel, global float* acc_matr)
 {
-	const float step = 0.01f;
-	const float mass = 0.00009f;
+	constant float step = 0.01f;
+	constant float mass = 0.00009f;
 
 	unsigned long long i = get_global_id(0);
 
@@ -54,13 +54,13 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	barrier(CLK_GLOBAL_MEM_FENCE);
 
 	float4 acc = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
-	for (unsigned long long j = 0; j < i; j++)
+	for (unsigned long long k = 0; k < i; k++)
 	{
-		acc += acc_matr[indx(j, i)] * (pos[j] - pos[i]);
+		acc += acc_matr[indx(k, i)] * (pos[k] - pos[i]);
 	}
-	for (unsigned long long j = i + 1; j < get_global_size(0); j++)
+	for (unsigned long long l = i + 1; l < get_global_size(0); l++)
 	{
-		acc += acc_matr[indx(i, j)] * (pos[j] - pos[i]);
+		acc += acc_matr[indx(i, l)] * (pos[l] - pos[i]);
 	}
 
 	vel[i] = vel[i] + step * acc;
