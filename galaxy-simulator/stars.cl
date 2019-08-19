@@ -13,6 +13,12 @@
 */
 
 
+constant float time_step = 0.01f;
+constant float mass = 0.00009f;
+constant float radius = 0.05f;
+constant float repulsion = 0.5f;
+
+
 unsigned long indx(unsigned long i, unsigned long j)
 {
 	return (j * (j - 1) / 2 + i);
@@ -21,12 +27,9 @@ unsigned long indx(unsigned long i, unsigned long j)
 
 kernel void propagate(global float4* pos, global float4* vel, global float* acc_matr)
 {
-	constant float step = 0.01f;
-	constant float mass = 0.00009f;
-
 	unsigned long i = get_global_id(0);
 
-	pos[i] = pos[i] + (float4)(step * vel[i].xyz, 0.0f);
+	pos[i] = pos[i] + (float4)(time_step * vel[i].xyz, 0.0f);
 
 	if (length(pos[i].xyz) > 1.0f)
 	{
@@ -41,13 +44,13 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 	{
 		float r = distance(pos[i], pos[j]);
 
-		if (r > 0.05f)
+		if (r > radius)
 		{
 			acc_matr[indx(i, j)] = mass / r / r / r;
 		}
 		else
 		{
-			acc_matr[indx(i, j)] = -0.5f;
+			acc_matr[indx(i, j)] = -repulsion;
 		}
 	}
 
@@ -63,7 +66,7 @@ kernel void propagate(global float4* pos, global float4* vel, global float* acc_
 		acc += acc_matr[indx(i, j)] * (pos[j] - pos[i]);
 	}
 
-	vel[i] = vel[i] + step * acc;
+	vel[i] = vel[i] + time_step * acc;
 
 	if (length(vel[i]) > 1.0f)
 		vel[i] = normalize(vel[i]);
