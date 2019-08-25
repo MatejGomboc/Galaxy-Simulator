@@ -38,8 +38,11 @@ if __name__ == "__main__":
 		print("input file: " + args.inputFileName)
 		print("output file: " + args.outputFileName)
 
-	with open(args.inputFileName, 'r') as file:
-		stringSource = "\n".join([line.rstrip() for line in file]) # remove trailing whitespaces
+	if not args.compact:
+		with open(args.inputFileName, "r") as file:
+			stringSource = "\n".join([line.rstrip() for line in file]) # remove trailing whitespaces
+	else:
+		stringSource = open(args.inputFileName, "r").read()
 
 	if args.verbose:
 		print("\noriginal OpenCL source:")
@@ -47,23 +50,24 @@ if __name__ == "__main__":
 
 	if args.compact:
 		stringSource = comment_remover(stringSource) # remove all comments
-		stringSource = stringSource.replace("\n", "") # remove line breaks
 		stringSource = stringSource.replace("\t", " ") # replace '\t' with single space
 		stringSource = stringSource.replace("   ", " ") # replace triple space with single space
 		stringSource = stringSource.replace("  ", " ") # replace double space with single space
-		stringSource = stringSource.replace("; ", ";") # remove space at the end of each statement
-		stringSource = stringSource.strip(); # remove leading and trailing space
-		
-		# remove spaces at each operator and bracket
+
+		# remove spaces around each operator and bracket
 		for char in "!\"%&/()=?*+-|,.;:^{}~\'[]<>":
 			stringSource = stringSource.replace(char + " ", char)
 			stringSource = stringSource.replace(" " + char, char)
+		
+		temp = [line.strip() for line in stringSource.split("\n")] # remove leading and trailing whitespaces
+		stringSource = "\n".join([line for line in temp if line]) # remove empty lines
 
-	stringSource = stringSource.replace("\\", "\\\\") # replace '\\'
-	stringSource = stringSource.replace("\"", "\\\"") # replace '\"'
-	stringSource = stringSource.replace("\'", "\\\'") # replace '\''
+	if not args.compact:
+		stringSource = stringSource.replace("\\", "\\\\") # replace '\\' in comments
+		stringSource = stringSource.replace("\"", "\\\"") # replace '\"' in comments
+		stringSource = stringSource.replace("\'", "\\\'") # replace '\'' in comments
+	
 	stringSource = stringSource.replace("\n", "\\n\"\n\"") # replace '\n'
-
 	stringSource = "const char* ocl_src_" + os.path.splitext(args.inputFileName)[0] + " =\n\"" + stringSource
 
 	if args.compact:
